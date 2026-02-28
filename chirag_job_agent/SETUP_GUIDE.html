@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Actions Setup Guide — Chirag's Job Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FAFAFA;
+  --white: #FFFFFF;
+  --dark: #0F172A;
+  --gray: #64748B;
+  --gray-light: #F1F5F9;
+  --border: #E2E8F0;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --blue-mid: #BFDBFE;
+  --green: #16A34A;
+  --green-light: #F0FDF4;
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --red: #DC2626;
+  --purple: #7C3AED;
+  --purple-light: #F5F3FF;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Sora', sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
+
+.page { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, #1E40AF 0%, #1D4ED8 50%, #2563EB 100%);
+  border-radius: 20px; padding: 40px 36px; margin-bottom: 40px; color: white;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.hero::after {
+  content: '';
+  position: absolute; bottom: -40px; right: 60px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+  padding: 5px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 16px;
+}
+.hero h1 { font-size: 30px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
+.hero p { font-size: 15px; opacity: 0.85; max-width: 520px; }
+.hero-stats {
+  display: flex; gap: 28px; margin-top: 24px; padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.15); flex-wrap: wrap;
+}
+.hero-stat { text-align: center; }
+.hero-stat-val { font-size: 22px; font-weight: 800; }
+.hero-stat-lbl { font-size: 12px; opacity: 0.7; margin-top: 2px; }
+
+/* FLOW */
+.flow {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 40px; flex-wrap: wrap;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px 20px;
+}
+.flow-node {
+  text-align: center; padding: 10px 16px; min-width: 110px;
+}
+.flow-icon { font-size: 26px; }
+.flow-label { font-size: 12px; font-weight: 600; color: var(--gray); margin-top: 4px; }
+.flow-arrow { font-size: 20px; color: var(--border); padding: 0 4px; }
+
+/* STEPS */
+.steps { display: flex; flex-direction: column; gap: 16px; }
+
+.step {
+  background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.step.done { border-color: #86EFAC; background: var(--green-light); }
+.step.active { border-color: var(--blue-mid); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+
+.step-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 22px; cursor: pointer;
+}
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; border: 2px solid var(--border);
+  background: var(--gray-light); color: var(--gray);
+  transition: all 0.2s;
+}
+.step.done .step-num { background: var(--green); border-color: var(--green); color: white; }
+.step.active .step-num { background: var(--blue); border-color: var(--blue); color: white; }
+
+.step-title { font-size: 15px; font-weight: 700; flex: 1; }
+.step-time {
+  font-size: 12px; color: var(--gray); background: var(--gray-light);
+  padding: 3px 10px; border-radius: 100px; font-weight: 500;
+}
+.step.done .step-time { background: #DCFCE7; color: var(--green); }
+
+.step-body {
+  padding: 0 22px 22px; display: none;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.step.active .step-body { display: block; }
+
+.step-desc { font-size: 14px; color: #374151; margin-bottom: 14px; line-height: 1.7; }
+
+/* CODE */
+.code {
+  background: #0F172A; border-radius: 10px; padding: 16px 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px;
+  color: #E2E8F0; margin: 12px 0; overflow-x: auto; line-height: 1.7;
+  position: relative;
+}
+.code .comment { color: #64748B; }
+.code .key { color: #F472B6; }
+.code .val { color: #86EFAC; }
+.code .url { color: #7DD3FC; }
+.copy-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  color: #94A3B8; padding: 3px 10px; border-radius: 6px; font-size: 11px;
+  cursor: pointer; font-family: 'Sora', sans-serif; transition: all 0.2s;
+}
+.copy-btn:hover { color: white; }
+.copy-btn.ok { color: #86EFAC; }
+
+/* INFO BOX */
+.info {
+  border-radius: 10px; padding: 14px 16px; margin: 12px 0;
+  font-size: 13px; line-height: 1.7; display: flex; gap: 10px; align-items: flex-start;
+}
+.info.blue { background: var(--blue-light); border: 1px solid var(--blue-mid); color: #1E40AF; }
+.info.amber { background: var(--amber-light); border: 1px solid #FDE68A; color: #92400E; }
+.info.green { background: var(--green-light); border: 1px solid #BBF7D0; color: #166534; }
+.info.purple { background: var(--purple-light); border: 1px solid #DDD6FE; color: #5B21B6; }
+.info-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* BUTTON */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none;
+  font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; text-decoration: none;
+}
+.btn-blue { background: var(--blue); color: white; }
+.btn-blue:hover { background: #1D4ED8; }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #15803D; }
+.btn-outline { background: none; border: 1.5px solid var(--border); color: var(--gray); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+.btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+/* COMPARISON */
+.compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin: 20px 0;
+}
+.compare-card {
+  border: 1.5px solid var(--border); border-radius: 12px; padding: 16px;
+}
+.compare-card.winner { border-color: var(--blue-mid); background: var(--blue-light); }
+.compare-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.compare-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.compare-row:last-child { border: none; }
+.tick { color: var(--green); font-weight: 700; }
+.cross { color: var(--red); }
+
+/* SECTION TITLE */
+.section-title {
+  font-size: 11px; font-weight: 700; color: var(--gray);
+  text-transform: uppercase; letter-spacing: 0.1em;
+  margin: 32px 0 14px;
+}
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--dark); color: white;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.3s; z-index: 999;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+@media(max-width: 600px) {
+  .hero { padding: 28px 22px; }
+  .hero h1 { font-size: 22px; }
+  .compare { grid-template-columns: 1fr; }
+  .flow { gap: 4px; }
+  .flow-node { min-width: 80px; padding: 8px 8px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">🤖 GitHub Actions · 100% Free</div>
+    <h1>Run Your Job Agent<br>From the Web — Forever</h1>
+    <p>No laptop. No Termux. No server. Just a free GitHub account and 20 minutes of setup. It runs every morning automatically, even when your phone is off.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val">₹0</div><div class="hero-stat-lbl">Monthly cost</div></div>
+      <div class="hero-stat"><div class="hero-stat-val">∞</div><div class="hero-stat-lbl">Free minutes (public repo)</div></div>
+      <div class="hero-stat"><div class="hero-stat-val">8:30</div><div class="hero-stat-lbl">Daily run time (IST)</div></div>
+      <div class="hero-stat"><div class="hero-stat-val">20 min</div><div class="hero-stat-lbl">One-time setup</div></div>
+    </div>
+  </div>
+
+  <!-- FLOW -->
+  <div class="flow">
+    <div class="flow-node"><div class="flow-icon">🌐</div><div class="flow-label">GitHub<br>Actions</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node"><div class="flow-icon">🔍</div><div class="flow-label">Scrape<br>3 Sites</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node"><div class="flow-icon">🧠</div><div class="flow-label">AI<br>Score</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node"><div class="flow-icon">📊</div><div class="flow-label">Save to<br>Repo</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node"><div class="flow-icon">📨</div><div class="flow-label">Email<br>Digest</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node"><div class="flow-icon">📱</div><div class="flow-label">Your<br>Gmail</div></div>
+  </div>
+
+  <div class="section-title">Setup Steps — 20 Minutes Total</div>
+
+  <div class="steps" id="steps">
+
+    <!-- STEP 1 -->
+    <div class="step active" id="step1">
+      <div class="step-header" onclick="toggleStep('step1')">
+        <div class="step-num">1</div>
+        <div class="step-title">Create a free GitHub account</div>
+        <div class="step-time">2 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          GitHub is a free website where developers store code. Your job agent will live here and run automatically.
+        </div>
+        <div class="info blue">
+          <span class="info-icon">ℹ️</span>
+          <span>If you already have a GitHub account, skip straight to Step 2.</span>
+        </div>
+        <div class="btn-row">
+          <a href="https://github.com/signup" target="_blank" class="btn btn-blue">Open GitHub Signup →</a>
+        </div>
+        <div class="step-desc" style="margin-top:14px">
+          Fill in username, email, password → Verify email → You're in.
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step1','step2')">✓ Done — I have a GitHub account</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step" id="step2">
+      <div class="step-header" onclick="toggleStep('step2')">
+        <div class="step-num">2</div>
+        <div class="step-title">Create a new repository</div>
+        <div class="step-time">2 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          A repository is like a folder for your project on GitHub's servers.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2;padding-left:20px">
+          <li>Click the <strong>+</strong> icon (top right on GitHub) → <strong>New repository</strong></li>
+          <li>Name it: <code style="background:#F1F5F9;padding:2px 8px;border-radius:4px;font-family:monospace">chirag-job-agent</code></li>
+          <li>Set visibility to <strong>Public</strong> ← important! Public = unlimited free minutes</li>
+          <li>Check <strong>"Add a README file"</strong></li>
+          <li>Click <strong>Create repository</strong></li>
+        </ol>
+        <div class="info amber">
+          <span class="info-icon">⚠️</span>
+          <span><strong>Must be Public.</strong> Private repos only get 2,000 free minutes/month. Public repos get unlimited minutes — more than enough for a daily job agent.</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step2','step3')">✓ Repository created</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step" id="step3">
+      <div class="step-header" onclick="toggleStep('step3')">
+        <div class="step-num">3</div>
+        <div class="step-title">Upload your job agent files</div>
+        <div class="step-time">5 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          You'll upload the ZIP file you already have. GitHub can unpack it for you.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2.2;padding-left:20px">
+          <li>On your repository page, click <strong>Add file → Upload files</strong></li>
+          <li>Drag and drop <code style="background:#F1F5F9;padding:2px 8px;border-radius:4px;font-family:monospace">chirag_job_agent.zip</code> into the upload area</li>
+          <li>Scroll down → click <strong>Commit changes</strong></li>
+          <li>Now go to the repository's main page</li>
+          <li>Click the pencil icon ✏️ on the README file</li>
+          <li>The folder structure should now show in your repo</li>
+        </ol>
+        <div class="info blue">
+          <span class="info-icon">💡</span>
+          <span>Alternatively, on a computer: install <a href="https://desktop.github.com" style="color:#1D4ED8">GitHub Desktop</a>, clone your repo, paste the unzipped files, and push. Either way works.</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step3','step4')">✓ Files uploaded</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="step4">
+      <div class="step-header" onclick="toggleStep('step4')">
+        <div class="step-num">4</div>
+        <div class="step-title">Get your Gmail App Password</div>
+        <div class="step-time">3 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Gmail won't let scripts log in with your normal password. You need a special "App Password" — a separate 16-character key just for this agent.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2.2;padding-left:20px">
+          <li>Go to <strong>myaccount.google.com</strong> on your phone or browser</li>
+          <li>Tap <strong>Security</strong></li>
+          <li>Tap <strong>2-Step Verification</strong> — turn it ON if not already</li>
+          <li>Scroll down → tap <strong>App passwords</strong></li>
+          <li>App: <strong>Mail</strong> &nbsp;·&nbsp; Device: <strong>Other</strong> → type <em>"Job Agent"</em></li>
+          <li>Tap <strong>Generate</strong> → copy the 16-character password shown</li>
+        </ol>
+        <div class="info green">
+          <span class="info-icon">✅</span>
+          <span>It looks like: <code style="font-family:monospace">abcd efgh ijkl mnop</code> — save it somewhere, you'll need it in the next step.</span>
+        </div>
+        <div class="btn-row">
+          <a href="https://myaccount.google.com/security" target="_blank" class="btn btn-blue">Open Google Security →</a>
+          <button class="btn btn-green" onclick="markDone('step4','step5')">✓ I have my App Password</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step" id="step5">
+      <div class="step-header" onclick="toggleStep('step5')">
+        <div class="step-num">5</div>
+        <div class="step-title">Add Gmail password as a GitHub Secret</div>
+        <div class="step-time">2 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          GitHub Secrets store sensitive info like passwords safely — they're hidden from everyone, including you after you save them, but the code can use them.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2.2;padding-left:20px">
+          <li>Go to your repository on GitHub</li>
+          <li>Click <strong>Settings</strong> tab (top of the repo page)</li>
+          <li>Left sidebar → <strong>Secrets and variables → Actions</strong></li>
+          <li>Click <strong>New repository secret</strong></li>
+          <li>Name: <code style="background:#F1F5F9;padding:2px 8px;border-radius:4px;font-family:monospace">GMAIL_PASSWORD</code></li>
+          <li>Secret: paste your 16-character App Password</li>
+          <li>Click <strong>Add secret</strong></li>
+        </ol>
+        <div class="info amber">
+          <span class="info-icon">🔒</span>
+          <span>The secret name must be <strong>exactly</strong> <code style="font-family:monospace">GMAIL_PASSWORD</code> (all caps) — the code already looks for this exact name.</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step5','step6')">✓ Secret saved</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step" id="step6">
+      <div class="step-header" onclick="toggleStep('step6')">
+        <div class="step-num">6</div>
+        <div class="step-title">Enable GitHub Actions</div>
+        <div class="step-time">1 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          GitHub Actions is the engine that runs your code automatically. You just need to turn it on.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2.2;padding-left:20px">
+          <li>Go to your repository → click the <strong>Actions</strong> tab</li>
+          <li>You'll see a message "Workflows aren't being run on this forked repository"</li>
+          <li>Click <strong>"I understand my workflows, go ahead and enable them"</strong></li>
+          <li>You should now see <strong>"🤖 Daily Job Agent"</strong> in the workflow list</li>
+        </ol>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step6','step7')">✓ Actions enabled</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step" id="step7">
+      <div class="step-header" onclick="toggleStep('step7')">
+        <div class="step-num">7</div>
+        <div class="step-title">Run a manual test</div>
+        <div class="step-time">3 min</div>
+      </div>
+      <div class="step-body">
+        <div class="step-desc">
+          Before waiting until tomorrow morning, test it right now to make sure everything works.
+        </div>
+        <ol style="font-size:14px;color:#374151;line-height:2.2;padding-left:20px">
+          <li>Go to the <strong>Actions</strong> tab in your repo</li>
+          <li>Click <strong>"🤖 Daily Job Agent"</strong> in the left list</li>
+          <li>Click <strong>"Run workflow"</strong> button (right side)</li>
+          <li>Select <strong>test_mode: true</strong> for first run</li>
+          <li>Click the green <strong>"Run workflow"</strong> button</li>
+          <li>Watch the yellow dot turn green ✅ (takes ~2 minutes)</li>
+          <li>Click on the run to see live logs</li>
+        </ol>
+        <div class="info green">
+          <span class="info-icon">📧</span>
+          <span>If the test passes — check your Gmail! A digest email should arrive at <strong>ashu200221@gmail.com</strong> within a minute of the run finishing.</span>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="markDone('step7','done')">✅ Test passed — I got the email!</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONE -->
+    <div class="step" id="stepdone" style="display:none">
+      <div class="step-header" style="cursor:default">
+        <div class="step-num" style="background:#16A34A;border-color:#16A34A;color:white;font-size:18px">🎉</div>
+        <div class="step-title">You're live! Agent runs every day at 8:30 AM IST</div>
+        <div class="step-time" style="background:#DCFCE7;color:#16A34A">Active</div>
+      </div>
+    </div>
+
+  </div><!-- /steps -->
+
+  <!-- HOW TO VIEW RESULTS -->
+  <div class="section-title" style="margin-top:40px">How to See Your Results</div>
+  <div style="background:white;border:1.5px solid var(--border);border-radius:16px;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--dark)">📧 Email (main way)</div>
+      <div style="font-size:13px;color:var(--gray);line-height:1.7">Check Gmail every morning after 8:30 AM IST. Beautifully formatted digest with all jobs scored 6+/10, sorted by best match first.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--dark)">📊 GitHub (advanced)</div>
+      <div style="font-size:13px;color:var(--gray);line-height:1.7">Go to your repo → <strong>Actions tab</strong> → click any run → view live logs. The SQLite database is also saved in the <code style="font-family:monospace;font-size:12px">data/</code> folder.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--dark)">▶️ Run manually anytime</div>
+      <div style="font-size:13px;color:var(--gray);line-height:1.7">Actions tab → Daily Job Agent → Run workflow → Run. Works from your phone browser in 10 seconds.</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--dark)">⚙️ Change settings</div>
+      <div style="font-size:13px;color:var(--gray);line-height:1.7">Edit <code style="font-family:monospace;font-size:12px">config.py</code> directly on GitHub to change your target roles, score threshold, or email address. No download needed.</div>
+    </div>
+  </div>
+
+  <!-- WHY GITHUB ACTIONS -->
+  <div class="section-title" style="margin-top:40px">Why GitHub Actions over Make / Zapier / N8N?</div>
+  <div class="compare">
+    <div class="compare-card winner">
+      <div class="compare-title">⭐ GitHub Actions (This Guide)</div>
+      <div class="compare-row"><span>Cost</span><span class="tick">₹0 forever</span></div>
+      <div class="compare-row"><span>Run limit</span><span class="tick">Unlimited</span></div>
+      <div class="compare-row"><span>Runs when phone off</span><span class="tick">✓ Yes</span></div>
+      <div class="compare-row"><span>Your data privacy</span><span class="tick">✓ Your repo</span></div>
+      <div class="compare-row"><span>Setup</span><span>20 min, once</span></div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-title">Make.com / Zapier</div>
+      <div class="compare-row"><span>Cost</span><span class="cross">Hits limits quickly</span></div>
+      <div class="compare-row"><span>Run limit</span><span class="cross">1,000 ops/mo free</span></div>
+      <div class="compare-row"><span>Runs when phone off</span><span class="tick">✓ Yes</span></div>
+      <div class="compare-row"><span>Your data privacy</span><span class="cross">Their servers</span></div>
+      <div class="compare-row"><span>Setup</span><span>Easier but limited</span></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center;font-size:13px;color:var(--gray)">
+    Built for Chirag Sharma &nbsp;·&nbsp; AI Job Agent &nbsp;·&nbsp; Powered by GitHub Actions
+  </div>
+
+</div><!-- /page -->
+
+<div class="toast" id="toast">✓ Copied!</div>
+
+<script>
+function toggleStep(id) {
+  const step = document.getElementById(id);
+  const isActive = step.classList.contains('active');
+  // Don't close done steps
+  if (step.classList.contains('done') && isActive) return;
+  step.classList.toggle('active', !isActive);
+}
+
+function markDone(currentId, nextId) {
+  const current = document.getElementById(currentId);
+  current.classList.add('done');
+  current.classList.remove('active');
+  current.querySelector('.step-body').style.display = 'none';
+
+  if (nextId === 'done') {
+    document.getElementById('stepdone').style.display = 'block';
+    document.getElementById('stepdone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  const next = document.getElementById(nextId);
+  if (next) {
+    next.classList.add('active');
+    setTimeout(() => next.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+}
+
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('ok');
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => { t.classList.remove('show'); btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
