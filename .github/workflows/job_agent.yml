@@ -1,0 +1,57 @@
+name: 🤖 Daily Job Agent
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Run in test mode?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  run-job-agent:
+    name: Scrape → Score → Email Digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install requests beautifulsoup4 lxml
+      - name: 🤖 Run AI Job Agent
+        env:
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
+        run: |
+          if [ "$TEST_MODE" = "true" ]; then
+            python main.py --test
+          else
+            python main.py
+          fi
+      - name: 📊 Upload run log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: job-agent-log-${{ github.run_number }}
+          path: logs/
+          retention-days: 7
+      - name: 💾 Save jobs database
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Job Agent Bot"
+          git add data/ logs/ || true
+          git diff-index --quiet HEAD || git commit -m "🤖 Job run #${{ github.run_number }}"
+          git push || true
